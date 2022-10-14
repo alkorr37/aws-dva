@@ -1,0 +1,106 @@
+{
+  "Parameters": {
+    "ImageId": {
+      "Type": "String",
+      "Default": "ami-08e2d37b6a0129927"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": [
+        "t1.micro",
+        "t2.micro",
+        "t3.micro"
+      ],
+      "Description": "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+    },
+    "MinInstanceCount": {
+      "Type": "String",
+      "Default": "2"
+    },
+    "DesiredInstanceCount": {
+      "Type": "String",
+      "Default": "2"
+    },
+    "MaxInstanceCount": {
+      "Type": "String",
+      "Default": "3"
+    },
+    "JavaInstall": {
+      "Type": "String",
+      "Default": "#!/bin/bash\nsudo yum install -y java-1.8.0-openjdk-devel.x86_64"
+    }
+  },
+  "Resources": {
+    "IcmpGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow ICMP",
+        "SecurityGroupIngress": {
+          "CidrIp": "0.0.0.0/0",
+          "IpProtocol": "icmp",
+          "FromPort": 8,
+          "ToPort": 8
+        }
+      }
+    },
+    "SshGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Allow SSH",
+        "SecurityGroupIngress": {
+          "CidrIp": "0.0.0.0/0",
+          "IpProtocol": "tcp",
+          "FromPort": 22,
+          "ToPort": 22
+        }
+      }
+    },
+    "LaunchConfiguration": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": {
+          "Ref": "ImageId"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "KeyName": "Basic",
+        "SecurityGroups": [
+          {
+            "Ref": "IcmpGroup"
+          },
+          {
+            "Ref": "SshGroup"
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Ref": "JavaInstall"
+          }
+        }
+      }
+    },
+    "AsGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "AvailabilityZones": {
+          "Fn::GetAZs": ""
+        },
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfiguration"
+        },
+        "DesiredCapacity": {
+          "Ref": "DesiredInstanceCount"
+        },
+        "MinSize": {
+          "Ref": "MinInstanceCount"
+        },
+        "MaxSize": {
+          "Ref": "MaxInstanceCount"
+        }
+      }
+    }
+  },
+  "Description": "22-10-14"
+}
